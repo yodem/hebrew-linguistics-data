@@ -26,6 +26,8 @@ audience: voice-miner agent (hebrew-book-producer), style-miner agent (academic-
 
 ## בייסליין — נתוני קורפוס
 
+> **אזהרה — ערכי placeholder.** המספרים בבלוק שלהלן אינם מדידה של קורפוס. הם הועתקו מבלוק JSON לדוגמה (`style-miner.md`, academic-writer), כפי ששדה `provenance` מציין. אין להשתמש בהם כנורמה של עברית עיונית עד שיחושב בייסליין אמיתי מקורפוס מלא (פריט פתוח).
+
 ```json
 {
   "version": "0.3.0",
