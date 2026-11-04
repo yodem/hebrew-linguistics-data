@@ -7,9 +7,11 @@
 #
 # The CandleKeep item ID is stored in scripts/.candlekeep-item-id (untracked,
 # created on first run). On subsequent runs, the script does an idempotent
-# `ck items put` against the recorded ID.
+# `trove items put --expect-version` against the recorded ID (Trove is the renamed CandleKeep).
 #
-# Requires: ck CLI on PATH, ck auth complete (run `ck auth login` once).
+# Requires: trove CLI on PATH, signed in to the personal account.
+# Env: DRY_RUN=1 builds and checks only; FIXES="<gap id> ..." closes those reader requests when the write lands.
+# Trove limits: every top-level `# ` section is one page, at most 20,000 bytes; at most 1,000 pages.
 
 set -euo pipefail
 
@@ -21,8 +23,8 @@ DESCRIPTION="Curated Hebrew editorial knowledge — Academy decisions, connectiv
 TMP_BODY="$(mktemp)"
 trap 'rm -f "${TMP_BODY}"' EXIT
 
-if ! command -v ck >/dev/null 2>&1; then
-  echo "ERROR: ck CLI not on PATH. Install with: curl -fsSL https://candlekeep.dev/install.sh | sh" >&2
+if ! command -v trove >/dev/null 2>&1; then
+  echo "ERROR: trove CLI not on PATH (see https://heytrove.ai)" >&2
   exit 1
 fi
 
@@ -52,20 +54,41 @@ HEADER
 CHARS=$(wc -c < "${TMP_BODY}" | tr -d ' ')
 echo "Built combined body — ${CHARS} chars across $(ls -1 "${CHAPTERS_DIR}"/[0-9][0-9]-*.md | wc -l | tr -d ' ') chapters."
 
+# Refuse before writing if any page breaks Trove's limits (a `# ` line inside a code fence is not a page).
+python3 - "${TMP_BODY}" <<'PY'
+import sys
+pages, cur, fence = [], [], False
+for line in open(sys.argv[1], encoding="utf-8").read().split("\n"):
+    if line.startswith("```"):
+        fence = not fence
+    if not fence and line.startswith("# "):
+        pages.append(cur); cur = []
+    cur.append(line)
+pages.append(cur)
+sizes = [len("\n".join(p).encode()) for p in pages if p]
+bad = [(i + 1, n) for i, n in enumerate(sizes) if n > 20000]
+print("pages: %d, largest: %d bytes" % (len(sizes), max(sizes)))
+if bad or len(sizes) > 1000:
+    sys.exit("ERROR: over Trove limits: %s" % bad)
+PY
+
+if [ "${DRY_RUN:-0}" = "1" ]; then echo "DRY_RUN: built and checked, nothing written."; exit 0; fi
+
+FIX_ARGS=()
+for g in ${FIXES:-}; do FIX_ARGS+=(--fixes "$g"); done
+
 if [ -s "${ID_FILE}" ]; then
   ITEM_ID=$(cat "${ID_FILE}")
-  echo "Updating existing CandleKeep item ${ITEM_ID}…"
-  ck items put "${ITEM_ID}" -f "${TMP_BODY}"
+  V=$(trove items history "${ITEM_ID}" --json --no-session | python3 -c 'import sys, json; print(json.load(sys.stdin)["currentVersion"])')
+  echo "Updating existing Trove item ${ITEM_ID} (version ${V})…"
+  trove items put "${ITEM_ID}" -f "${TMP_BODY}" --expect-version "${V}" ${FIX_ARGS[@]+"${FIX_ARGS[@]}"} --no-session
   echo "  ✔ updated."
 else
-  echo "Creating new CandleKeep item titled \"${TITLE}\"…"
-  CREATE_OUTPUT=$(ck --json items create "${TITLE}" \
-    --description "${DESCRIPTION}" \
-    --content "$(cat "${TMP_BODY}")")
-  # Extract the new item ID from the JSON output.
+  echo "Creating new Trove item titled \"${TITLE}\"…"
+  CREATE_OUTPUT=$(trove items import "${TMP_BODY}" --title "${TITLE}" --json --no-session)
   NEW_ID=$(printf '%s' "${CREATE_OUTPUT}" | python3 -c 'import sys, json; d = json.load(sys.stdin); print(d.get("id") or d.get("item", {}).get("id") or "")')
   if [ -z "${NEW_ID}" ]; then
-    echo "ERROR: could not parse item ID from ck output:" >&2
+    echo "ERROR: could not parse item ID from trove output:" >&2
     echo "${CREATE_OUTPUT}" >&2
     exit 1
   fi
@@ -74,6 +97,6 @@ else
 fi
 
 echo
-echo "Done. The CandleKeep book \"${TITLE}\" is now in sync with this repo."
+echo "Done. The Trove book \"${TITLE}\" is now in sync with this repo."
 echo "Both hebrew-book-producer and academic-writer plugins will pick up the"
-echo "new content on their next session-start CandleKeep load."
+echo "new content on their next session-start Trove load."
