@@ -18,12 +18,13 @@ chapters/
   05-citation-conventions.md
   06-typography-conventions.md
   07-author-register.md
-  08-style-fingerprint-baseline.md
+  08-style-fingerprint-baseline.md   # baseline numbers are placeholders, see below
+  09-nikud-vs-teamim-unicode.md
 scripts/
-  sync-to-candlekeep.sh    # uploads / updates the CandleKeep book from chapters/
-.github/workflows/
-  sync.yml                 # optional: runs sync-to-candlekeep.sh on push to main
+  sync-to-candlekeep.sh    # uploads / updates the Trove book from chapters/
 ```
+
+Nine chapters in all.
 
 Each chapter is a Hebrew markdown file with prose guidance and (where useful) embedded JSON code blocks holding structured data — connective tables, banned-opener corpora, niqqud rules, fingerprint baseline metrics. Skills extract the JSON blocks at runtime when they need a programmatic table.
 
@@ -35,7 +36,11 @@ Each chapter is a Hebrew markdown file with prose guidance and (where useful) em
 
 CandleKeep then has the new content within seconds; both consuming plugins read it on next session start.
 
-> A GitHub Actions workflow that auto-runs the sync on push is intentionally omitted from this repo. Add `.github/workflows/sync.yml` yourself if you want CI to handle it; the script is designed to be CI-friendly (idempotent, reads `scripts/.candlekeep-item-id` via cache).
+> The sync runs locally only. It needs a signed-in Trove account, so the repo has no CI workflow for it.
+
+## Open items
+
+- **Chapter 8 baseline numbers are placeholders.** The values in `08-style-fingerprint-baseline.md` were copied from a demo JSON block in academic-writer's `style-miner.md`, as the chapter's own `provenance` field says; they were never measured on a corpus. Do not treat them as real Hebrew norms. Open item: compute real baselines from a full corpus run.
 
 ## Why CandleKeep + GitHub?
 

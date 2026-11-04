@@ -4,6 +4,16 @@ All notable changes to `hebrew-linguistics-data` are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Chapter 9, `nikud-vs-teamim-unicode` — niqqud vs. cantillation marks in Unicode.
+
+### Fixed
+- README now lists all nine chapters.
+- Removed the mention of a CI sync workflow that was never added. The sync runs locally only.
+- Chapter 8 and the README now mark the fingerprint baseline numbers as placeholders.
+
 ## [0.1.0] — 2026-05-01
 
 ### Added
@@ -17,4 +27,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   7. `author-register` — register markers (high / journalistic / colloquial).
   8. `style-fingerprint-baseline` — corpus baseline for the voice fingerprinter.
 - `scripts/sync-to-candlekeep.sh` — uploads/updates the runtime CandleKeep book.
-- `.github/workflows/sync.yml` — runs the sync on push to `main`.
